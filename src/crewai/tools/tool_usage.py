@@ -115,7 +115,10 @@ class ToolUsage:
                 self._printer.print(content=f"\n\n{error}\n", color="red")
             return error
 
-        if isinstance(tool, CrewStructuredTool) and tool.name == self._i18n.tools("add_image")["name"]:  # type: ignore
+        if (
+            isinstance(tool, CrewStructuredTool)
+            and tool.name == self._i18n.tools("add_image")["name"]
+        ):  # type: ignore
             try:
                 result = self._use(tool_string=tool_string, tool=tool, calling=calling)
                 return result
@@ -180,7 +183,9 @@ class ToolUsage:
 
                 if calling.arguments:
                     try:
-                        acceptable_args = tool.args_schema.model_json_schema()["properties"].keys()  # type: ignore
+                        acceptable_args = tool.args_schema.model_json_schema()[
+                            "properties"
+                        ].keys()  # type: ignore
                         arguments = {
                             k: v
                             for k, v in calling.arguments.items()
@@ -409,19 +414,18 @@ class ToolUsage:
 
     def _validate_tool_input(self, tool_input: str) -> Dict[str, Any]:
         try:
-            # Replace Python literals with JSON equivalents
-            replacements = {
-                r"'": '"',
-                r"None": "null",
-                r"True": "true",
-                r"False": "false",
-            }
-            for pattern, replacement in replacements.items():
-                tool_input = re.sub(pattern, replacement, tool_input)
+            # Use Python's str.replace method for minimal overhead replacements
+            tool_input = (
+                tool_input.replace("'", '"')
+                .replace("None", "null")
+                .replace("True", "true")
+                .replace("False", "false")
+            )
 
+            # Attempt to parse the JSON string
             arguments = json.loads(tool_input)
         except json.JSONDecodeError:
-            # Attempt to repair JSON string
+            # Attempt to repair JSON string only if initial parsing fails
             repaired_input = repair_json(tool_input)
             try:
                 arguments = json.loads(repaired_input)
