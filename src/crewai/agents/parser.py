@@ -117,11 +117,18 @@ class CrewAgentParser:
             )
 
     def _extract_thought(self, text: str) -> str:
-        regex = r"(.*?)(?:\n\nAction|\n\nFinal Answer)"
-        thought_match = re.search(regex, text, re.DOTALL)
-        if thought_match:
-            return thought_match.group(1).strip()
-        return ""
+        action_index = text.find("\n\nAction")
+        final_answer_index = text.find("\n\nFinal Answer")
+
+        if action_index == -1 and final_answer_index == -1:
+            return ""  # neither Action nor Final Answer present
+
+        first_index = (
+            min(action_index, final_answer_index)
+            if (action_index != -1 and final_answer_index != -1)
+            else max(action_index, final_answer_index)
+        )
+        return text[:first_index].strip()
 
     def _clean_action(self, text: str) -> str:
         """Clean action string by removing non-essential formatting characters."""
