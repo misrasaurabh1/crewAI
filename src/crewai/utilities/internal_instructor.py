@@ -32,8 +32,11 @@ class InternalInstructor:
             self._client = instructor.from_litellm(completion)
 
     def to_json(self):
-        model = self.to_pydantic()
-        return model.model_dump_json(indent=2)
+        return self._client.chat.completions.create(
+            model=self.llm.model,
+            response_model=self.model,
+            messages=[{"role": "user", "content": self.content}],
+        ).model_dump_json(indent=2)
 
     def to_pydantic(self):
         messages = [{"role": "user", "content": self.content}]
