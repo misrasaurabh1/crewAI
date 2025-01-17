@@ -104,10 +104,16 @@ class TokenManager:
             # Linux and other Unix-like: Use ~/.local/share
             base_path = os.path.expanduser("~/.local/share")
 
+        if base_path is None:
+            # Handles cases where LOCALAPPDATA is not set on Windows
+            raise OSError("Could not determine secure storage path for the current OS")
+
         app_name = "crewai/credentials"
         storage_path = Path(base_path) / app_name
 
-        storage_path.mkdir(parents=True, exist_ok=True)
+        # Create directory only if it doesn't already exist
+        if not storage_path.exists():
+            storage_path.mkdir(parents=True, exist_ok=True)
 
         return storage_path
 
