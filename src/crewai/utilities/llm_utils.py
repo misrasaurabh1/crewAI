@@ -1,5 +1,5 @@
 import os
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, Optional, Union
 
 from crewai.cli.constants import DEFAULT_LLM_MODEL, ENV_VARS, LITELLM_PARAMS
 from crewai.llm import LLM
@@ -73,84 +73,63 @@ def _llm_via_environment_or_fallback() -> Optional[LLM]:
     """
     Helper function: if llm_value is None, we load environment variables or fallback default model.
     """
-    model_name = (
-        os.environ.get("OPENAI_MODEL_NAME")
-        or os.environ.get("MODEL")
-        or DEFAULT_LLM_MODEL
+    model_name = os.environ.get(
+        "OPENAI_MODEL_NAME", os.environ.get("MODEL", DEFAULT_LLM_MODEL)
     )
 
-    # Initialize parameters with correct types
-    model: str = model_name
-    temperature: Optional[float] = None
-    max_tokens: Optional[int] = None
-    max_completion_tokens: Optional[int] = None
-    logprobs: Optional[int] = None
-    timeout: Optional[float] = None
-    api_key: Optional[str] = None
-    base_url: Optional[str] = None
-    api_version: Optional[str] = None
-    presence_penalty: Optional[float] = None
-    frequency_penalty: Optional[float] = None
-    top_p: Optional[float] = None
-    n: Optional[int] = None
-    stop: Optional[Union[str, List[str]]] = None
-    logit_bias: Optional[Dict[int, float]] = None
-    response_format: Optional[Dict[str, Any]] = None
-    seed: Optional[int] = None
-    top_logprobs: Optional[int] = None
-    callbacks: List[Any] = []
-
-    # Optional base URL from env
-    api_base = os.environ.get("OPENAI_API_BASE") or os.environ.get("OPENAI_BASE_URL")
-    if api_base:
-        base_url = api_base
-
-    # Initialize llm_params dictionary
+    # Initialize llm_params dictionary with default None values
     llm_params: Dict[str, Any] = {
-        "model": model,
-        "temperature": temperature,
-        "max_tokens": max_tokens,
-        "max_completion_tokens": max_completion_tokens,
-        "logprobs": logprobs,
-        "timeout": timeout,
-        "api_key": api_key,
-        "base_url": base_url,
-        "api_version": api_version,
-        "presence_penalty": presence_penalty,
-        "frequency_penalty": frequency_penalty,
-        "top_p": top_p,
-        "n": n,
-        "stop": stop,
-        "logit_bias": logit_bias,
-        "response_format": response_format,
-        "seed": seed,
-        "top_logprobs": top_logprobs,
-        "callbacks": callbacks,
+        "model": model_name,
+        "temperature": None,
+        "max_tokens": None,
+        "max_completion_tokens": None,
+        "logprobs": None,
+        "timeout": None,
+        "api_key": None,
+        "base_url": os.environ.get(
+            "OPENAI_API_BASE", os.environ.get("OPENAI_BASE_URL")
+        ),
+        "api_version": None,
+        "presence_penalty": None,
+        "frequency_penalty": None,
+        "top_p": None,
+        "n": None,
+        "stop": None,
+        "logit_bias": None,
+        "response_format": None,
+        "seed": None,
+        "top_logprobs": None,
+        "callbacks": [],
     }
 
-    UNACCEPTED_ATTRIBUTES = [
+    UNACCEPTED_ATTRIBUTES = {
         "AWS_ACCESS_KEY_ID",
         "AWS_SECRET_ACCESS_KEY",
         "AWS_REGION_NAME",
-    ]
+    }
+
     set_provider = model_name.split("/")[0] if "/" in model_name else "openai"
 
     if set_provider in ENV_VARS:
         env_vars_for_provider = ENV_VARS[set_provider]
         if isinstance(env_vars_for_provider, (list, tuple)):
             for env_var in env_vars_for_provider:
-                key_name = env_var.get("key_name")
-                if key_name and key_name not in UNACCEPTED_ATTRIBUTES:
-                    env_value = os.environ.get(key_name)
-                    if env_value:
-                        # Map environment variable names to recognized parameters
-                        param_key = _normalize_key_name(key_name.lower())
-                        llm_params[param_key] = env_value
-                elif isinstance(env_var, dict):
-                    if env_var.get("default", False):
-                        for key, value in env_var.items():
-                            if key not in ["prompt", "key_name", "default"]:
-                                llm_params[key.lower()] = value
+                if isinstance(env_var, dict):
+                    key_name = env_var.get("key_name")
+                    if key_name and key_name not in UNACCEPTED_ATTRIBUTES:
+                        env_value = os.environ.get(key_name)
+                        if env_value:
+                            # Map environment variable names to recognized parameters
+                            param_key = _normalize_key_name(key_name.lower())
+                            llm_params[param_key] = env_value
+                    elif env_var.get("default", False):
+                        llm_params.update(
+                            {
+                                k.lower(): v
+                                for k, v in env_var.items()
+                                if k not in {"prompt", "key_name", "default"}
+                            }
+                        )
                 else:
                     print(
                         f"Expected env_var to be a dictionary, but got {type(env_var)}"
@@ -175,7 +154,6 @@ def _normalize_key_name(key_name: str) -> str:
     Maps environment variable names to recognized litellm parameter keys,
     using patterns from LITELLM_PARAMS.
     """
-    for pattern in LITELLM_PARAMS:
-        if pattern in key_name:
-            return pattern
-    return key_name
+    return next(
+        (pattern for pattern in LITELLM_PARAMS if pattern in key_name), key_name
+    )
