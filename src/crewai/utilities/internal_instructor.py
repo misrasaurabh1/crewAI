@@ -37,7 +37,14 @@ class InternalInstructor:
 
     def to_pydantic(self):
         messages = [{"role": "user", "content": self.content}]
+
+        # Access attributes once and store them in local variables
+        llm_model = self.llm.model
+        response_model = self.model
+
+        # Create the request
         model = self._client.chat.completions.create(
-            model=self.llm.model, response_model=self.model, messages=messages
+            model=llm_model, response_model=response_model, messages=messages
         )
+
         return model
