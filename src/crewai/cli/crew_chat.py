@@ -137,12 +137,13 @@ def generate_crew_tool_schema(crew_inputs: ChatInputs) -> dict:
     crew_inputs: A ChatInputs object containing crew_description
                  and a list of input fields (each with a name & description).
     """
-    properties = {}
-    for field in crew_inputs.inputs:
-        properties[field.name] = {
+    properties = {
+        field.name: {
             "type": "string",
             "description": field.description or "No description provided",
         }
+        for field in crew_inputs.inputs
+    }
 
     required_fields = [field.name for field in crew_inputs.inputs]
 
