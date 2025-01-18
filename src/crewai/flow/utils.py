@@ -227,10 +227,7 @@ def build_ancestor_dict(flow: Any) -> Dict[str, Set[str]]:
 
 
 def dfs_ancestors(
-    node: str,
-    ancestors: Dict[str, Set[str]],
-    visited: Set[str],
-    flow: Any
+    node: str, ancestors: Dict[str, Set[str]], visited: Set[str], flow: Any
 ) -> None:
     """
     Perform depth-first search to build ancestor relationships.
@@ -274,7 +271,9 @@ def dfs_ancestors(
                     dfs_ancestors(listener_name, ancestors, visited, flow)
 
 
-def is_ancestor(node: str, ancestor_candidate: str, ancestors: Dict[str, Set[str]]) -> bool:
+def is_ancestor(
+    node: str, ancestor_candidate: str, ancestors: Dict[str, Set[str]]
+) -> bool:
     """
     Check if one node is an ancestor of another.
 
@@ -292,7 +291,9 @@ def is_ancestor(node: str, ancestor_candidate: str, ancestors: Dict[str, Set[str
     bool
         True if ancestor_candidate is an ancestor of node, False otherwise.
     """
-    return ancestor_candidate in ancestors.get(node, set())
+    if node not in ancestors:
+        return False
+    return ancestor_candidate in ancestors[node]
 
 
 def build_parent_children_dict(flow: Any) -> Dict[str, List[str]]:
@@ -339,7 +340,9 @@ def build_parent_children_dict(flow: Any) -> Dict[str, List[str]]:
     return parent_children
 
 
-def get_child_index(parent: str, child: str, parent_children: Dict[str, List[str]]) -> int:
+def get_child_index(
+    parent: str, child: str, parent_children: Dict[str, List[str]]
+) -> int:
     """
     Get the index of a child node in its parent's sorted children list.
 
