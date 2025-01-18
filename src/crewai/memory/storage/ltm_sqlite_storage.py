@@ -12,12 +12,12 @@ class LTMSQLiteStorage:
     An updated SQLite storage class for LTM data storage.
     """
 
-    def __init__(
-        self, db_path: Optional[str] = None
-    ) -> None:
+    def __init__(self, db_path: Optional[str] = None) -> None:
         if db_path is None:
             # Get the parent directory of the default db path and create our db file there
-            db_path = str(Path(db_storage_path()).parent / "long_term_memory_storage.db")
+            db_path = str(
+                Path(db_storage_path()).parent / "long_term_memory_storage.db"
+            )
         self.db_path = db_path
         self._printer: Printer = Printer()
         # Ensure parent directory exists
@@ -119,10 +119,8 @@ class LTMSQLiteStorage:
                 cursor = conn.cursor()
                 cursor.execute("DELETE FROM long_term_memories")
                 conn.commit()
-
-        except sqlite3.Error as e:
+        except sqlite3.Error as error:
             self._printer.print(
-                content=f"MEMORY ERROR: An error occurred while deleting all rows in LTM: {e}",
+                content=f"MEMORY ERROR: An error occurred while deleting all rows in LTM: {error}",
                 color="red",
             )
-        return None
