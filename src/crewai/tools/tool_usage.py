@@ -115,7 +115,10 @@ class ToolUsage:
                 self._printer.print(content=f"\n\n{error}\n", color="red")
             return error
 
-        if isinstance(tool, CrewStructuredTool) and tool.name == self._i18n.tools("add_image")["name"]:  # type: ignore
+        if (
+            isinstance(tool, CrewStructuredTool)
+            and tool.name == self._i18n.tools("add_image")["name"]
+        ):  # type: ignore
             try:
                 result = self._use(tool_string=tool_string, tool=tool, calling=calling)
                 return result
@@ -180,7 +183,9 @@ class ToolUsage:
 
                 if calling.arguments:
                     try:
-                        acceptable_args = tool.args_schema.model_json_schema()["properties"].keys()  # type: ignore
+                        acceptable_args = tool.args_schema.model_json_schema()[
+                            "properties"
+                        ].keys()  # type: ignore
                         arguments = {
                             k: v
                             for k, v in calling.arguments.items()
@@ -265,19 +270,22 @@ class ToolUsage:
 
     def _format_result(self, result: Any) -> None:
         self.task.used_tools += 1
-        if self._should_remember_format():  # type: ignore # "_should_remember_format" of "ToolUsage" does not return a value (it only ever returns None)
-            result = self._remember_format(result=result)  # type: ignore # "_remember_format" of "ToolUsage" does not return a value (it only ever returns None)
+        if self._should_remember_format():
+            result = self._remember_format(result=result)
         return result
 
     def _should_remember_format(self) -> bool:
         return self.task.used_tools % self._remember_format_after_usages == 0
 
     def _remember_format(self, result: str) -> None:
-        result = str(result)
-        result += "\n\n" + self._i18n.slice("tools").format(
-            tools=self.tools_description, tool_names=self.tools_names
+        formatted_result = (
+            str(result)
+            + "\n\n"
+            + self._i18n.slice("tools").format(
+                tools=self.tools_description, tool_names=self.tools_names
+            )
         )
-        return result  # type: ignore # No return value expected
+        return formatted_result
 
     def _check_tool_repeated_usage(
         self, calling: Union[ToolCalling, InstructorToolCalling]
