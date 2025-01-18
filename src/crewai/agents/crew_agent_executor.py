@@ -160,15 +160,11 @@ class CrewAgentExecutor(CrewAgentExecutorMixin):
 
     def _get_llm_response(self) -> str:
         """Call the LLM and return the response, handling any invalid responses."""
-        answer = self.llm.call(
-            self.messages,
-            callbacks=self.callbacks,
-        )
+        answer = self.llm.call(self.messages, callbacks=self.callbacks)
 
         if not answer:
             self._printer.print(
-                content="Received None or empty response from LLM call.",
-                color="red",
+                "Received None or empty response from LLM call.", color="red"
             )
             raise ValueError("Invalid response from LLM call - None or empty.")
 
@@ -400,9 +396,9 @@ class CrewAgentExecutor(CrewAgentExecutorMixin):
             if self.crew is not None and hasattr(self.crew, "_train_iteration"):
                 train_iteration = self.crew._train_iteration
                 if agent_id in training_data and isinstance(train_iteration, int):
-                    training_data[agent_id][train_iteration][
-                        "improved_output"
-                    ] = result.output
+                    training_data[agent_id][train_iteration]["improved_output"] = (
+                        result.output
+                    )
                     training_handler.save(training_data)
                 else:
                     self._printer.print(

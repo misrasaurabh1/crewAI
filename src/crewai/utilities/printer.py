@@ -7,20 +7,17 @@ class Printer:
     """Handles colored console output formatting."""
 
     def print(self, content: str, color: Optional[str] = None):
-        if color == "purple":
-            self._print_purple(content)
-        elif color == "red":
-            self._print_red(content)
-        elif color == "bold_green":
-            self._print_bold_green(content)
-        elif color == "bold_purple":
-            self._print_bold_purple(content)
-        elif color == "bold_blue":
-            self._print_bold_blue(content)
-        elif color == "yellow":
-            self._print_yellow(content)
-        elif color == "bold_yellow":
-            self._print_bold_yellow(content)
+        color_map = {
+            "purple": "\033[95m",
+            "red": "\033[91m",
+            "bold_green": "\033[1m\033[92m",
+            "bold_purple": "\033[1m\033[95m",
+            "bold_blue": "\033[1m\033[94m",
+            "yellow": "\033[93m",
+            "bold_yellow": "\033[1m\033[93m",
+        }
+        if color in color_map:
+            print(f"{color_map[color]} {content}\033[00m")
         else:
             print(content)
 
