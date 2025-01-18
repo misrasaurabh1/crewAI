@@ -5,9 +5,11 @@ import sys
 import threading
 import warnings
 from contextlib import contextmanager
+from functools import lru_cache
 from typing import Any, Dict, List, Optional, Union, cast
 
 from dotenv import load_dotenv
+from litellm import get_supported_openai_params
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", UserWarning)
@@ -222,7 +224,7 @@ class LLM:
                 ].message
                 text_response = response_message.content or ""
                 tool_calls = getattr(response_message, "tool_calls", [])
-                
+
                 # Ensure callbacks get the full response object with usage info
                 if callbacks and len(callbacks) > 0:
                     for callback in callbacks:
@@ -278,12 +280,10 @@ class LLM:
                 raise
 
     def supports_function_calling(self) -> bool:
-        try:
-            params = get_supported_openai_params(model=self.model)
-            return "response_format" in params
-        except Exception as e:
-            logging.error(f"Failed to get supported params: {str(e)}")
+        params = self._get_cached_supported_params()
+        if params is None:
             return False
+        return "response_format" in params
 
     def supports_stop_words(self) -> bool:
         try:
@@ -362,3 +362,11 @@ class LLM:
 
                 litellm.success_callback = success_callbacks
                 litellm.failure_callback = failure_callbacks
+
+    @lru_cache(maxsize=None)
+    def _get_cached_supported_params(self):
+        try:
+            return get_supported_openai_params(model=self.model)
+        except Exception as e:
+            logging.error(f"Failed to get supported params: {str(e)}")
+            return None
