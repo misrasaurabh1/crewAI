@@ -24,10 +24,4 @@ class TokenProcess:
         self.successful_requests = self.successful_requests + requests
 
     def get_summary(self) -> UsageMetrics:
-        return UsageMetrics(
-            total_tokens=self.total_tokens,
-            prompt_tokens=self.prompt_tokens,
-            cached_prompt_tokens=self.cached_prompt_tokens,
-            completion_tokens=self.completion_tokens,
-            successful_requests=self.successful_requests,
-        )
+        return UsageMetrics(**self.__dict__)
