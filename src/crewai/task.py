@@ -275,9 +275,10 @@ class Task(BaseModel):
 
     @model_validator(mode="after")
     def check_tools(self):
-        """Check if the tools are set."""
-        if not self.tools and self.agent and self.agent.tools:
-            self.tools.extend(self.agent.tools)
+        """Check if the tools are set and add required ones from the agent."""
+        if not self.tools:
+            # Only extend if agent.tools is not empty
+            self.tools = self.agent.tools if self.agent and self.agent.tools else []
         return self
 
     @model_validator(mode="after")
@@ -431,7 +432,9 @@ class Task(BaseModel):
             content = (
                 json_output
                 if json_output
-                else pydantic_output.model_dump_json() if pydantic_output else result
+                else pydantic_output.model_dump_json()
+                if pydantic_output
+                else result
             )
             self._save_file(content)
 
