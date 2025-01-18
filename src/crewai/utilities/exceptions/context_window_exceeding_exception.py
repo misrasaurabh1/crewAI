@@ -15,9 +15,9 @@ class LLMContextLengthExceededException(Exception):
         super().__init__(self._get_error_message(error_message))
 
     def _is_context_limit_error(self, error_message: str) -> bool:
+        error_message_lower = error_message.lower()
         return any(
-            phrase.lower() in error_message.lower()
-            for phrase in self.CONTEXT_LIMIT_ERRORS
+            phrase in error_message_lower for phrase in self.CONTEXT_LIMIT_ERRORS
         )
 
     def _get_error_message(self, error_message: str):
