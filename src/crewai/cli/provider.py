@@ -21,9 +21,6 @@ def select_choice(prompt_message, choices):
     - str: The selected choice from the list, or None if the user chooses to quit.
     """
 
-    provider_models = get_provider_data()
-    if not provider_models:
-        return
     click.secho(prompt_message, fg="cyan")
     for idx, choice in enumerate(choices, start=1):
         click.secho(f"{idx}. {choice}", fg="cyan")
@@ -45,7 +42,7 @@ def select_choice(prompt_message, choices):
             pass
 
         click.secho(
-            "Invalid selection. Please select a number between 1 and 6 or 'q' to quit.",
+            f"Invalid selection. Please select a number between 1 and {len(choices)} or 'q' to quit.",
             fg="red",
         )
 
