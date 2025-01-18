@@ -21,33 +21,25 @@ def select_choice(prompt_message, choices):
     - str: The selected choice from the list, or None if the user chooses to quit.
     """
 
-    provider_models = get_provider_data()
-    if not provider_models:
-        return
     click.secho(prompt_message, fg="cyan")
     for idx, choice in enumerate(choices, start=1):
         click.secho(f"{idx}. {choice}", fg="cyan")
     click.secho("q. Quit", fg="cyan")
 
-    while True:
-        choice = click.prompt(
-            "Enter the number of your choice or 'q' to quit", type=str
-        )
+    choice = click.prompt(
+        "Enter the number of your choice or 'q' to quit", type=str
+    ).lower()
 
-        if choice.lower() == "q":
-            return None
+    if choice == "q":
+        return None
 
-        try:
-            selected_index = int(choice) - 1
-            if 0 <= selected_index < len(choices):
-                return choices[selected_index]
-        except ValueError:
-            pass
-
+    if choice.isdigit() and 1 <= int(choice) <= len(choices):
+        return choices[int(choice) - 1]
+    else:
         click.secho(
-            "Invalid selection. Please select a number between 1 and 6 or 'q' to quit.",
-            fg="red",
+            "Invalid selection. Please select a valid number or 'q' to quit.", fg="red"
         )
+        return select_choice(prompt_message, choices)
 
 
 def select_provider(provider_models):
@@ -89,12 +81,7 @@ def select_model(provider, provider_models):
     Returns:
     - str: The selected model, or None if the operation is aborted or an invalid selection is made.
     """
-    predefined_providers = [p.lower() for p in PROVIDERS]
-
-    if provider in predefined_providers:
-        available_models = MODELS.get(provider, [])
-    else:
-        available_models = provider_models.get(provider, [])
+    available_models = MODELS.get(provider, provider_models.get(provider, []))
 
     if not available_models:
         click.secho(f"No models available for provider '{provider}'.", fg="red")
