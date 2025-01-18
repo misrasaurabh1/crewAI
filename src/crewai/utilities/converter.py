@@ -1,5 +1,6 @@
 import json
 import re
+from functools import lru_cache
 from typing import Any, Optional, Type, Union, get_args, get_origin
 
 from pydantic import BaseModel, ValidationError
@@ -141,21 +142,16 @@ def handle_partial_json(
 ) -> Union[dict, BaseModel, str]:
     match = re.search(r"({.*})", result, re.DOTALL)
     if match:
-        try:
-            exported_result = model.model_validate_json(match.group(0))
+        validated_result = cached_model_validate_json(model, match.group(0))
+        if not isinstance(validated_result, Exception):
+            exported_result = validated_result
             if is_json_output:
                 return exported_result.model_dump()
             return exported_result
-        except json.JSONDecodeError:
-            pass
-        except ValidationError:
-            pass
-        except Exception as e:
-            Printer().print(
-                content=f"Unexpected error during partial JSON handling: {type(e).__name__}: {e}. Attempting alternative conversion method.",
-                color="red",
-            )
-
+        Printer().print(
+            content=f"Validation error: {type(validated_result).__name__}: {validated_result}. Attempting alternative conversion method.",
+            color="red",
+        )
     return convert_with_instructions(
         result, model, is_json_output, agent, converter_cls
     )
@@ -170,6 +166,7 @@ def convert_with_instructions(
 ) -> Union[dict, BaseModel, str]:
     llm = agent.function_calling_llm or agent.llm
     instructions = get_conversion_instructions(model, llm)
+
     converter = create_converter(
         agent=agent,
         converter_cls=converter_cls,
@@ -178,9 +175,16 @@ def convert_with_instructions(
         model=model,
         instructions=instructions,
     )
-    exported_result = (
-        converter.to_pydantic() if not is_json_output else converter.to_json()
-    )
+
+    try:
+        exported_result = (
+            converter.to_pydantic() if not is_json_output else converter.to_json()
+        )
+    except Exception as e:
+        Printer().print(
+            content=f"Conversion failed: {e}. Using raw output instead.", color="red"
+        )
+        return result
 
     if isinstance(exported_result, ConverterError):
         Printer().print(
@@ -266,3 +270,11 @@ def generate_model_description(model: Type[BaseModel]) -> str:
         f'"{name}": {describe_field(type_)}' for name, type_ in fields.items()
     ]
     return "{\n  " + ",\n  ".join(field_descriptions) + "\n}"
+
+
+@lru_cache(maxsize=None)
+def cached_model_validate_json(model: Type[BaseModel], json_string: str):
+    try:
+        return model.model_validate_json(json_string)
+    except (json.JSONDecodeError, ValidationError) as e:
+        return e

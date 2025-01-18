@@ -1,26 +1,27 @@
 """Utility for colored console output."""
 
-from typing import Optional
+import json
+from functools import lru_cache
+from typing import Optional, Type
+
+from pydantic import BaseModel, ValidationError
 
 
 class Printer:
     """Handles colored console output formatting."""
 
     def print(self, content: str, color: Optional[str] = None):
-        if color == "purple":
-            self._print_purple(content)
-        elif color == "red":
-            self._print_red(content)
-        elif color == "bold_green":
-            self._print_bold_green(content)
-        elif color == "bold_purple":
-            self._print_bold_purple(content)
-        elif color == "bold_blue":
-            self._print_bold_blue(content)
-        elif color == "yellow":
-            self._print_yellow(content)
-        elif color == "bold_yellow":
-            self._print_bold_yellow(content)
+        color_methods = {
+            "purple": self._print_purple,
+            "red": self._print_red,
+            "bold_green": self._print_bold_green,
+            "bold_purple": self._print_bold_purple,
+            "bold_blue": self._print_bold_blue,
+            "yellow": self._print_yellow,
+            "bold_yellow": self._print_bold_yellow,
+        }
+        if color in color_methods:
+            color_methods[color](content)
         else:
             print(content)
 
@@ -44,3 +45,11 @@ class Printer:
 
     def _print_bold_yellow(self, content):
         print("\033[1m\033[93m {}\033[00m".format(content))
+
+
+@lru_cache(maxsize=None)
+def cached_model_validate_json(model: Type[BaseModel], json_string: str):
+    try:
+        return model.model_validate_json(json_string)
+    except (json.JSONDecodeError, ValidationError) as e:
+        return e
