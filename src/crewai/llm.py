@@ -29,15 +29,18 @@ class FilteredStream:
         self._lock = threading.Lock()
 
     def write(self, s) -> int:
+        # Define the unwanted messages as constants
+        UNWANTED_MSG_1 = (
+            "Give Feedback / Get Help: https://github.com/BerriAI/litellm/issues/new"
+        )
+        UNWANTED_MSG_2 = "LiteLLM.Info: If you need to debug this error, use `litellm.set_verbose=True`"
+
+        # Perform the filter check first to avoid locking if not necessary
+        if UNWANTED_MSG_1 in s or UNWANTED_MSG_2 in s:
+            return 0
+
+        # Lock is only required for the actual write operation
         with self._lock:
-            # Filter out extraneous messages from LiteLLM
-            if (
-                "Give Feedback / Get Help: https://github.com/BerriAI/litellm/issues/new"
-                in s
-                or "LiteLLM.Info: If you need to debug this error, use `litellm.set_verbose=True`"
-                in s
-            ):
-                return 0
             return self._original_stream.write(s)
 
     def flush(self):
@@ -222,7 +225,7 @@ class LLM:
                 ].message
                 text_response = response_message.content or ""
                 tool_calls = getattr(response_message, "tool_calls", [])
-                
+
                 # Ensure callbacks get the full response object with usage info
                 if callbacks and len(callbacks) > 0:
                     for callback in callbacks:
