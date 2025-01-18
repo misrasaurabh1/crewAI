@@ -230,39 +230,44 @@ def create_converter(
 def generate_model_description(model: Type[BaseModel]) -> str:
     """
     Generate a string description of a Pydantic model's fields and their types.
-
-    This function takes a Pydantic model class and returns a string that describes
-    the model's fields and their respective types. The description includes handling
-    of complex types such as `Optional`, `List`, and `Dict`, as well as nested Pydantic
-    models.
     """
 
+    type_cache = {}
+
     def describe_field(field_type):
+        if field_type in type_cache:
+            return type_cache[field_type]
+
         origin = get_origin(field_type)
         args = get_args(field_type)
 
-        if origin is Union or (origin is None and len(args) > 0):
+        if origin is Union or (origin is None and args):
             # Handle both Union and the new '|' syntax
             non_none_args = [arg for arg in args if arg is not type(None)]
             if len(non_none_args) == 1:
-                return f"Optional[{describe_field(non_none_args[0])}]"
+                result = f"Optional[{describe_field(non_none_args[0])}]"
             else:
-                return f"Optional[Union[{', '.join(describe_field(arg) for arg in non_none_args)}]]"
+                result = (
+                    f"Union[{', '.join(describe_field(arg) for arg in non_none_args)}]"
+                )
         elif origin is list:
-            return f"List[{describe_field(args[0])}]"
+            result = f"List[{describe_field(args[0])}]"
         elif origin is dict:
             key_type = describe_field(args[0])
             value_type = describe_field(args[1])
-            return f"Dict[{key_type}, {value_type}]"
+            result = f"Dict[{key_type}, {value_type}]"
         elif isinstance(field_type, type) and issubclass(field_type, BaseModel):
-            return generate_model_description(field_type)
+            result = generate_model_description(field_type)
         elif hasattr(field_type, "__name__"):
-            return field_type.__name__
+            result = field_type.__name__
         else:
-            return str(field_type)
+            result = str(field_type)
+
+        type_cache[field_type] = result
+        return result
 
     fields = model.__annotations__
-    field_descriptions = [
+    field_descriptions = (
         f'"{name}": {describe_field(type_)}' for name, type_ in fields.items()
-    ]
+    )
     return "{\n  " + ",\n  ".join(field_descriptions) + "\n}"
