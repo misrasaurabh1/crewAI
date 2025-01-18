@@ -7,20 +7,10 @@ class Printer:
     """Handles colored console output formatting."""
 
     def print(self, content: str, color: Optional[str] = None):
-        if color == "purple":
-            self._print_purple(content)
-        elif color == "red":
-            self._print_red(content)
-        elif color == "bold_green":
-            self._print_bold_green(content)
-        elif color == "bold_purple":
-            self._print_bold_purple(content)
-        elif color == "bold_blue":
-            self._print_bold_blue(content)
-        elif color == "yellow":
-            self._print_yellow(content)
-        elif color == "bold_yellow":
-            self._print_bold_yellow(content)
+        if color:
+            print_method = self.color_methods.get(color)
+            if print_method:
+                print_method(content)
         else:
             print(content)
 
@@ -44,3 +34,14 @@ class Printer:
 
     def _print_bold_yellow(self, content):
         print("\033[1m\033[93m {}\033[00m".format(content))
+
+    def __init__(self):
+        self.color_methods = {
+            "purple": self._print_purple,
+            "red": self._print_red,
+            "bold_green": self._print_bold_green,
+            "bold_purple": self._print_bold_purple,
+            "bold_blue": self._print_bold_blue,
+            "yellow": self._print_yellow,
+            "bold_yellow": self._print_bold_yellow,
+        }
