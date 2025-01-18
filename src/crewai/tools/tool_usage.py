@@ -115,7 +115,10 @@ class ToolUsage:
                 self._printer.print(content=f"\n\n{error}\n", color="red")
             return error
 
-        if isinstance(tool, CrewStructuredTool) and tool.name == self._i18n.tools("add_image")["name"]:  # type: ignore
+        if (
+            isinstance(tool, CrewStructuredTool)
+            and tool.name == self._i18n.tools("add_image")["name"]
+        ):  # type: ignore
             try:
                 result = self._use(tool_string=tool_string, tool=tool, calling=calling)
                 return result
@@ -180,7 +183,9 @@ class ToolUsage:
 
                 if calling.arguments:
                     try:
-                        acceptable_args = tool.args_schema.model_json_schema()["properties"].keys()  # type: ignore
+                        acceptable_args = tool.args_schema.model_json_schema()[
+                            "properties"
+                        ].keys()  # type: ignore
                         arguments = {
                             k: v
                             for k, v in calling.arguments.items()
@@ -408,22 +413,25 @@ class ToolUsage:
             return self._tool_calling(tool_string)
 
     def _validate_tool_input(self, tool_input: str) -> Dict[str, Any]:
-        try:
-            # Replace Python literals with JSON equivalents
-            replacements = {
-                r"'": '"',
-                r"None": "null",
-                r"True": "true",
-                r"False": "false",
-            }
-            for pattern, replacement in replacements.items():
-                tool_input = re.sub(pattern, replacement, tool_input)
+        # Creating a dictionary of replacements
+        replacements = {
+            "'": '"',
+            "None": "null",
+            "True": "true",
+            "False": "false",
+        }
 
+        # Using str.replace for replacements
+        for old, new in replacements.items():
+            tool_input = tool_input.replace(old, new)
+
+        try:
+            # Attempt to parse the JSON directly after replacements
             arguments = json.loads(tool_input)
         except json.JSONDecodeError:
-            # Attempt to repair JSON string
-            repaired_input = repair_json(tool_input)
+            # If failed, repair the JSON and then attempt to parse again
             try:
+                repaired_input = repair_json(tool_input)
                 arguments = json.loads(repaired_input)
             except json.JSONDecodeError as e:
                 raise Exception(f"Invalid tool input JSON: {e}")
