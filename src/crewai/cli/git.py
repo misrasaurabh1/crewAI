@@ -49,11 +49,11 @@ class Repository:
 
     def has_uncommitted_changes(self) -> bool:
         """Check if the repository has uncommitted changes."""
-        return len(self.status().splitlines()) > 1
+        return len(self._cached_status()) > 1
 
     def is_ahead_or_behind(self) -> bool:
         """Check if the repository is ahead or behind the remote."""
-        for line in self.status().splitlines():
+        for line in self._cached_status():
             if line.startswith("##") and ("ahead" in line or "behind" in line):
                 return True
         return False
@@ -78,3 +78,9 @@ class Repository:
             return result.stdout.strip()
         except subprocess.CalledProcessError:
             return None
+
+    def _cached_status(self) -> list:
+        """Internal method to cache the output of git status."""
+        if not hasattr(self, "_status_cache"):
+            self._status_cache = self.status().splitlines()
+        return self._status_cache
