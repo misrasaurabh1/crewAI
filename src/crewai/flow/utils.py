@@ -193,14 +193,14 @@ def count_outgoing_edges(flow: Any) -> Dict[str, int]:
     Dict[str, int]
         Dictionary mapping method names to their outgoing edge count.
     """
-    counts = {}
-    for method_name in flow._methods:
-        counts[method_name] = 0
-    for method_name in flow._listeners:
-        _, trigger_methods = flow._listeners[method_name]
+    # Initialize counts dictionary with method names as keys and 0 as default value.
+    counts = {method_name: 0 for method_name in flow._methods}
+
+    for method_name, (_, trigger_methods) in flow._listeners.items():
         for trigger in trigger_methods:
-            if trigger in flow._methods:
+            if trigger in counts:
                 counts[trigger] += 1
+
     return counts
 
 
@@ -227,10 +227,7 @@ def build_ancestor_dict(flow: Any) -> Dict[str, Set[str]]:
 
 
 def dfs_ancestors(
-    node: str,
-    ancestors: Dict[str, Set[str]],
-    visited: Set[str],
-    flow: Any
+    node: str, ancestors: Dict[str, Set[str]], visited: Set[str], flow: Any
 ) -> None:
     """
     Perform depth-first search to build ancestor relationships.
@@ -274,7 +271,9 @@ def dfs_ancestors(
                     dfs_ancestors(listener_name, ancestors, visited, flow)
 
 
-def is_ancestor(node: str, ancestor_candidate: str, ancestors: Dict[str, Set[str]]) -> bool:
+def is_ancestor(
+    node: str, ancestor_candidate: str, ancestors: Dict[str, Set[str]]
+) -> bool:
     """
     Check if one node is an ancestor of another.
 
@@ -339,7 +338,9 @@ def build_parent_children_dict(flow: Any) -> Dict[str, List[str]]:
     return parent_children
 
 
-def get_child_index(parent: str, child: str, parent_children: Dict[str, List[str]]) -> int:
+def get_child_index(
+    parent: str, child: str, parent_children: Dict[str, List[str]]
+) -> int:
     """
     Get the index of a child node in its parent's sorted children list.
 
