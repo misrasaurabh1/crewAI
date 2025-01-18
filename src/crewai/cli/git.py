@@ -1,4 +1,5 @@
 import subprocess
+from functools import cached_property
 
 
 class Repository:
@@ -27,6 +28,7 @@ class Repository:
         """Fetch latest updates from the remote."""
         subprocess.run(["git", "fetch"], cwd=self.path, check=True)
 
+    @cached_property
     def status(self) -> str:
         """Get the git status in porcelain format."""
         return subprocess.check_output(
@@ -49,7 +51,7 @@ class Repository:
 
     def has_uncommitted_changes(self) -> bool:
         """Check if the repository has uncommitted changes."""
-        return len(self.status().splitlines()) > 1
+        return len(self.status.splitlines()) > 1
 
     def is_ahead_or_behind(self) -> bool:
         """Check if the repository is ahead or behind the remote."""
