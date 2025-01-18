@@ -27,17 +27,29 @@ class ContextualMemory:
         for a given task.
         """
         query = f"{task.description} {context}".strip()
-
-        if query == "":
+        if not query:
             return ""
 
-        context = []
-        context.append(self._fetch_ltm_context(task.description))
-        context.append(self._fetch_stm_context(query))
-        context.append(self._fetch_entity_context(query))
+        context_data = []
+
+        ltm_data = self._fetch_ltm_context(task.description)
+        if ltm_data:
+            context_data.append(ltm_data)
+
+        stm_data = self._fetch_stm_context(query)
+        if stm_data:
+            context_data.append(stm_data)
+
+        entity_data = self._fetch_entity_context(query)
+        if entity_data:
+            context_data.append(entity_data)
+
         if self.memory_provider == "mem0":
-            context.append(self._fetch_user_context(query))
-        return "\n".join(filter(None, context))
+            user_data = self._fetch_user_context(query)
+            if user_data:
+                context_data.append(user_data)
+
+        return "\n".join(context_data)
 
     def _fetch_stm_context(self, query) -> str:
         """
@@ -45,13 +57,19 @@ class ContextualMemory:
         formatted as bullet points.
         """
         stm_results = self.stm.search(query)
-        formatted_results = "\n".join(
-            [
-                f"- {result['memory'] if self.memory_provider == 'mem0' else result['context']}"
-                for result in stm_results
-            ]
-        )
-        return f"Recent Insights:\n{formatted_results}" if stm_results else ""
+        if not stm_results:
+            return ""
+
+        if self.memory_provider == "mem0":
+            formatted_results = "\n".join(
+                f"- {result['memory']}" for result in stm_results
+            )
+        else:
+            formatted_results = "\n".join(
+                f"- {result['context']}" for result in stm_results
+            )
+
+        return f"Recent Insights:\n{formatted_results}"
 
     def _fetch_ltm_context(self, task) -> Optional[str]:
         """
@@ -62,15 +80,15 @@ class ContextualMemory:
         if not ltm_results:
             return None
 
-        formatted_results = [
-            suggestion
-            for result in ltm_results
-            for suggestion in result["metadata"]["suggestions"]  # type: ignore # Invalid index type "str" for "str"; expected type "SupportsIndex | slice"
-        ]
-        formatted_results = list(dict.fromkeys(formatted_results))
-        formatted_results = "\n".join([f"- {result}" for result in formatted_results])  # type: ignore # Incompatible types in assignment (expression has type "str", variable has type "list[str]")
+        suggestions = set()
+        for result in ltm_results:
+            suggestions.update(result.get("metadata", {}).get("suggestions", []))
 
-        return f"Historical Data:\n{formatted_results}" if ltm_results else ""
+        if not suggestions:
+            return None
+
+        formatted_results = "\n".join(f"- {suggestion}" for suggestion in suggestions)
+        return f"Historical Data:\n{formatted_results}"
 
     def _fetch_entity_context(self, query) -> str:
         """
@@ -78,13 +96,19 @@ class ContextualMemory:
         formatted as bullet points.
         """
         em_results = self.em.search(query)
-        formatted_results = "\n".join(
-            [
-                f"- {result['memory'] if self.memory_provider == 'mem0' else result['context']}"
-                for result in em_results
-            ]  # type: ignore #  Invalid index type "str" for "str"; expected type "SupportsIndex | slice"
-        )
-        return f"Entities:\n{formatted_results}" if em_results else ""
+        if not em_results:
+            return ""
+
+        if self.memory_provider == "mem0":
+            formatted_results = "\n".join(
+                f"- {result['memory']}" for result in em_results
+            )
+        else:
+            formatted_results = "\n".join(
+                f"- {result['context']}" for result in em_results
+            )
+
+        return f"Entities:\n{formatted_results}"
 
     def _fetch_user_context(self, query: str) -> str:
         """
