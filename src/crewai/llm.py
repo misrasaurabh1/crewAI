@@ -5,9 +5,11 @@ import sys
 import threading
 import warnings
 from contextlib import contextmanager
+from functools import lru_cache
 from typing import Any, Dict, List, Optional, Union, cast
 
 from dotenv import load_dotenv
+from litellm import get_supported_openai_params
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", UserWarning)
@@ -222,7 +224,7 @@ class LLM:
                 ].message
                 text_response = response_message.content or ""
                 tool_calls = getattr(response_message, "tool_calls", [])
-                
+
                 # Ensure callbacks get the full response object with usage info
                 if callbacks and len(callbacks) > 0:
                     for callback in callbacks:
@@ -287,7 +289,7 @@ class LLM:
 
     def supports_stop_words(self) -> bool:
         try:
-            params = get_supported_openai_params(model=self.model)
+            params = self.cached_get_supported_openai_params(self.model)
             return "stop" in params
         except Exception as e:
             logging.error(f"Failed to get supported params: {str(e)}")
@@ -362,3 +364,7 @@ class LLM:
 
                 litellm.success_callback = success_callbacks
                 litellm.failure_callback = failure_callbacks
+
+    @lru_cache(maxsize=None)
+    def cached_get_supported_openai_params(self, model):
+        return get_supported_openai_params(model=model)
