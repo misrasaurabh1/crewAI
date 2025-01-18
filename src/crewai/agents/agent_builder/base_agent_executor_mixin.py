@@ -97,7 +97,7 @@ class CrewAgentExecutorMixin:
     def _ask_human_input(self, final_answer: str) -> str:
         """Prompt human input for final decision making."""
         self._printer.print(
-            content=f"\033[1m\033[95m ## Final Result:\033[00m \033[92m{final_answer}\033[00m"
+            content=f"{self._printer.final_result_prefix}{final_answer}{self._printer.final_result_suffix}"
         )
 
         self._printer.print(
@@ -110,3 +110,6 @@ class CrewAgentExecutorMixin:
             color="bold_yellow",
         )
         return input()
+
+    def __init__(self):
+        self._printer = Printer()
