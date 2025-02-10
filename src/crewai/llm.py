@@ -179,13 +179,24 @@ class LLM:
     ) -> str:
         """
         High-level call method.
+                  1) Calls litellm.completion
+          2) Checks for function/tool calls
+          3) If a tool call is found:
+               a) executes the function
+               b) returns the result
+          4) If no tool call, returns the text response
+        :param messages: The conversation messages
+        :param tools: Optional list of function schemas for function calling
+        :param callbacks: Optional list of callbacks
+        :param available_functions: A dictionary mapping function_name -> actual Python function
+        :return: Final text response from the LLM or the tool result
         """
         with suppress_warnings():
             if callbacks:
                 self.set_callbacks(callbacks)
 
             try:
-                # Make the completion call
+                # --- 1) Make the completion call
                 params = {
                     "model": self.model,
                     "messages": messages,
@@ -206,7 +217,7 @@ class LLM:
                     "api_version": self.api_version,
                     "api_key": self.api_key,
                     "stream": False,
-                    "tools": tools,
+                    "tools": tools, # pass the tool schema
                 }
 
                 # Filter out None values
@@ -217,7 +228,7 @@ class LLM:
                 text_response = choice.message.content or ""
                 tool_calls = getattr(choice.message, "tool_calls", [])
 
-                # Execute callbacks if any
+                # Ensure callbacks get the full response object with usage info
                 if callbacks:
                     usage_info = getattr(response, "usage", None)
                     if usage_info:
@@ -230,11 +241,11 @@ class LLM:
                                     end_time=0,
                                 )
 
-                # If no tool calls, return the text response
+                # --- 2) If no tool calls, return the text response
                 if not tool_calls or not available_functions:
                     return text_response
 
-                # Handle the tool call
+                # --- 3) Handle the tool call
                 tool_call = tool_calls[0]
                 function_name = tool_call.function.name
 
