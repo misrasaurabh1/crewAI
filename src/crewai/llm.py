@@ -7,14 +7,7 @@ import warnings
 from contextlib import contextmanager
 from typing import Any, Dict, List, Optional, Union, cast
 
-import litellm
 from dotenv import load_dotenv
-from litellm import Choices
-from litellm.types.utils import ModelResponse
-
-from crewai.utilities.exceptions.context_window_exceeding_exception import (
-    LLMContextLengthExceededException,
-)
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", UserWarning)
@@ -179,7 +172,7 @@ class LLM:
     ) -> str:
         """
         High-level call method.
-                  1) Calls litellm.completion
+          1) Calls litellm.completion
           2) Checks for function/tool calls
           3) If a tool call is found:
                a) executes the function
@@ -217,7 +210,7 @@ class LLM:
                     "api_version": self.api_version,
                     "api_key": self.api_key,
                     "stream": False,
-                    "tools": tools, # pass the tool schema
+                    "tools": tools,  # pass the tool schema
                 }
 
                 # Filter out None values
