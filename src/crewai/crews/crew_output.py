@@ -34,12 +34,12 @@ class CrewOutput(BaseModel):
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert json_output and pydantic_output to a dictionary."""
-        output_dict = {}
+        # Directly return the dictionary, avoiding the creation of a temporary variable
         if self.json_dict:
-            output_dict.update(self.json_dict)
+            return self.json_dict
         elif self.pydantic:
-            output_dict.update(self.pydantic.model_dump())
-        return output_dict
+            return self.pydantic.model_dump()
+        return {}  # Return an empty dictionary if neither is available
 
     def __getitem__(self, key):
         if self.pydantic and hasattr(self.pydantic, key):
