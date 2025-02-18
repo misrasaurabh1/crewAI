@@ -16,24 +16,22 @@ def process_config(
     Returns:
         Dict[str, Any]: The updated values dictionary.
     """
-    config = values.get("config", {})
+    config = values.get("config")
     if not config:
         return values
 
-    # Copy values from config (originally from YAML) to the model's attributes.
-    # Only copy if the attribute isn't already set, preserving any explicitly defined values.
-    for key, value in config.items():
-        if key not in model_class.model_fields or values.get(key) is not None:
-            continue
+    model_fields = model_class.model_fields
 
-        if isinstance(value, dict):
-            if isinstance(values.get(key), dict):
-                values[key].update(value)
+    for key, value in config.items():
+        if key in model_fields and values.get(key) is None:
+            if isinstance(value, dict):
+                current_value = values.get(key)
+                if isinstance(current_value, dict):
+                    current_value.update(value)
+                else:
+                    values[key] = value
             else:
                 values[key] = value
-        else:
-            values[key] = value
 
-    # Remove the config from values to avoid duplicate processing
-    values.pop("config", None)
+    values.pop("config", None)  # Remove config to avoid future duplication
     return values
