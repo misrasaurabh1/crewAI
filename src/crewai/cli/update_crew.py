@@ -114,12 +114,11 @@ def migrate_pyproject(input_file, output_file):
 def parse_version(version: str) -> str:
     """Parse and convert version specifiers."""
     if version.startswith("^"):
-        main_lib_version = version[1:].split(",")[0]
-        addtional_lib_version = None
-        if len(version[1:].split(",")) > 1:
-            addtional_lib_version = version[1:].split(",")[1]
+        version_parts = version[1:].split(",")
+        main_lib_version = version_parts[0]
+        additional_lib_version = version_parts[1] if len(version_parts) > 1 else None
 
         return f">={main_lib_version}" + (
-            f",{addtional_lib_version}" if addtional_lib_version else ""
+            f",{additional_lib_version}" if additional_lib_version else ""
         )
     return version
