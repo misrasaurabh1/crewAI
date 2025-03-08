@@ -171,14 +171,13 @@ class LLM:
         available_functions: Optional[Dict[str, Any]] = None,
     ) -> str:
         """
-        High-level call method that:
+        High-level call method.
           1) Calls litellm.completion
           2) Checks for function/tool calls
           3) If a tool call is found:
                a) executes the function
                b) returns the result
           4) If no tool call, returns the text response
-
         :param messages: The conversation messages
         :param tools: Optional list of function schemas for function calling
         :param callbacks: Optional list of callbacks
@@ -186,7 +185,7 @@ class LLM:
         :return: Final text response from the LLM or the tool result
         """
         with suppress_warnings():
-            if callbacks and len(callbacks) > 0:
+            if callbacks:
                 self.set_callbacks(callbacks)
 
             try:
@@ -214,21 +213,20 @@ class LLM:
                     "tools": tools,  # pass the tool schema
                 }
 
+                # Filter out None values
                 params = {k: v for k, v in params.items() if v is not None}
-
                 response = litellm.completion(**params)
-                response_message = cast(Choices, cast(ModelResponse, response).choices)[
-                    0
-                ].message
-                text_response = response_message.content or ""
-                tool_calls = getattr(response_message, "tool_calls", [])
-                
+
+                choice = cast(Choices, cast(ModelResponse, response).choices)[0]
+                text_response = choice.message.content or ""
+                tool_calls = getattr(choice.message, "tool_calls", [])
+
                 # Ensure callbacks get the full response object with usage info
-                if callbacks and len(callbacks) > 0:
-                    for callback in callbacks:
-                        if hasattr(callback, "log_success_event"):
-                            usage_info = getattr(response, "usage", None)
-                            if usage_info:
+                if callbacks:
+                    usage_info = getattr(response, "usage", None)
+                    if usage_info:
+                        for callback in callbacks:
+                            if hasattr(callback, "log_success_event"):
                                 callback.log_success_event(
                                     kwargs=params,
                                     response_obj={"usage": usage_info},
@@ -244,37 +242,27 @@ class LLM:
                 tool_call = tool_calls[0]
                 function_name = tool_call.function.name
 
-                if function_name in available_functions:
+                fn = available_functions.get(function_name)
+                if fn:
                     try:
                         function_args = json.loads(tool_call.function.arguments)
-                    except json.JSONDecodeError as e:
-                        logging.warning(f"Failed to parse function arguments: {e}")
-                        return text_response
-
-                    fn = available_functions[function_name]
-                    try:
-                        # Call the actual tool function
-                        result = fn(**function_args)
-
-                        return result
-
-                    except Exception as e:
-                        logging.error(
+                        return fn(**function_args)
+                    except (json.JSONDecodeError, Exception) as e:
+                        logging.exception(
                             f"Error executing function '{function_name}': {e}"
                         )
-                        return text_response
-
                 else:
                     logging.warning(
                         f"Tool call requested unknown function '{function_name}'"
                     )
-                    return text_response
+                return text_response
 
             except Exception as e:
+                error_message = str(e)
                 if not LLMContextLengthExceededException(
-                    str(e)
-                )._is_context_limit_error(str(e)):
-                    logging.error(f"LiteLLM call failed: {str(e)}")
+                    error_message
+                )._is_context_limit_error(error_message):
+                    logging.error(f"LiteLLM call failed: {error_message}")
                 raise
 
     def supports_function_calling(self) -> bool:
